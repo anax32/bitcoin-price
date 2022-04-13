@@ -1,0 +1,90 @@
+<html>
+<head>
+<!-- UIkit CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.13.7/dist/css/uikit.min.css" />
+
+<!-- UIkit JS -->
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.13.7/dist/js/uikit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.13.7/dist/js/uikit-icons.min.js"></script>
+
+</head>
+
+<body>
+<h1 class="uk-heading-medium uk-position-top-center">lol price my dude</h1>
+<div class="uk-position-center uk-text-large uk-text-center">
+<span id="user-btc-amount"> BTC</span> = <span id="fiat-converted-amount"></span>
+<hr />
+<span id="one-btc-amount">1 BTC</span> = <span id="btc-converted-amount"></span>
+</div>
+
+<script type="text/javascript">
+async function lookup_coinbase(f) {
+  // coinbase currency codes: https://api.coinbase.com/v2/currencies
+  var endpoint = "https://api.coinbase.com/v2/prices/spot?currency=" + f
+  return (await (await fetch(endpoint)).json()).data.amount;
+}
+
+async function lookup_kraken(f) {
+  // kraken currency codes: https://docs.kraken.com/rest/#operation/getAssetInfo
+  // FIXME: kraken currency codes are a mess, we have to get tradable pairs?
+  var endpoint = "https://api.kraken.com/0/public/Ticker?pair=XBT" + f
+  return (await (await fetch(endpoint)).json()).result["XXBTZ" + f].c[0];
+}
+
+async function update_data(b, f, x) {
+  var lut = {
+    "coinbase": lookup_coinbase,
+    "kraken": lookup_kraken
+  }
+
+  const per_btc = await lut[x](f.toUpperCase());
+
+  const values = {
+    "btc": parseFloat(per_btc).toFixed(2),
+    "user": (per_btc * b).toFixed(2)
+  }
+
+  document.getElementById("user-btc-amount").innerHTML = b + " BTC";
+  document.getElementById("btc-converted-amount").innerHTML = values["btc"] + " " + f;
+  document.getElementById("fiat-converted-amount").innerHTML = values["user"] + " " + f;
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+
+const btc_ = urlParams.get("btc");
+const fiat_ = urlParams.get("fiat");
+//const exchange_ = urlParams.has("x") ? urlParams.get("x") : "coinbase";
+const exchange_ = "coinbase";
+
+update_data(btc_, fiat_, exchange_);
+</script>
+
+<div class="uk-position-bottom-center">
+<hr />
+<form action="." method="GET">
+  <span>price</span>
+  <input class="uk-input uk-form-width-xsmall" type="text" placeholder="btc amount" name="btc">
+
+  <span>in</span>
+  <select class="uk-select uk-form-width-xsmall" placeholder="fiat currency" name="fiat">
+    <option>aud</option>
+    <option>cad</option>
+    <option>eur</option>
+    <option>gbp</option>
+    <option>usd</option>
+  </select>
+
+<!--  <span>via</span>
+  <select class="uk-select uk-form-width-xsmall" placeholder="exchange" name="x">
+    <option>coinbase</option>
+    <option>kraken</option>
+  </select>
+-->
+
+  <input type="submit" value="go" />
+</form>
+
+</div>
+
+</body>
+</html>
